@@ -1,196 +1,269 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <meta charset="utf-8" />
-    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900|Material+Icons" rel="stylesheet" type="text/css" />
-    <link href="https://cdn.jsdelivr.net/npm/quasar@2.6.6/dist/quasar.prod.css" rel="stylesheet" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900|Material+Icons"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/quasar@2.6.6/dist/quasar.prod.css"
+      rel="stylesheet"
+      type="text/css"
+    />
     <title>octet home test</title>
     <style>
-        td{
-            padding:10px;
-        }
-        .title{
-            background-color:#f2f2f2;
-            font-weight:bold;
-        }
-        .green{
-            color: darkgreen;
-            font-weight:bold;
-        }
-        .red{
-            color:red;
-        }
+      td {
+        padding: 10px;
+      }
+      .title {
+        background-color: #f2f2f2;
+        font-weight: bold;
+      }
+      .green {
+        color: darkgreen;
+        font-weight: bold;
+      }
+      .red {
+        color: red;
+      }
     </style>
-</head>
-<body id="q-app">
+  </head>
+  <body id="q-app">
     <q-layout view="lHh Lpr lFf">
-        <q-page-container>
-            <q-page class="q-pa-md q-gutter-md">
-                <q-banner class="bg-grey-3">
-                    <template v-slot:avatar>
-                        <q-icon name="info" color="primary" />
-                    </template>
-                    Click the button below to generate the fake data randomly, please click multi times to get different results.
-                </q-banner>
-                <q-btn color="primary" label="Pull Invoices from Xero" @click="generateData()"></q-btn>
+      <q-page-container>
+        <q-page class="q-pa-md q-gutter-md">
+          <q-banner class="bg-grey-3">
+            <template v-slot:avatar>
+              <q-icon name="info" color="primary" />
+            </template>
+            Click the button below to generate the fake data randomly, please
+            click multi times to get different results.
+          </q-banner>
+          <q-btn
+            color="primary"
+            label="Pull Invoices from Xero"
+            @click="generateData()"
+          ></q-btn>
 
-                <table v-if="invoices.length > 0">
-                    <tbody>
-                        <tr>
-                            <td class="title">Healthy Account?</td>
-                            <td :class="{green: accountHelthStatus =='Yes' ,red:accountHelthStatus =='No'} ">{{accountHelthStatus}}</td>
-                        </tr>
-                        <tr>
-                            <td class="title">Overdue Invoices:</td>
-                            <td>{{overdueInvoiceCount}}</td>
-                        </tr>
-                        <tr>
-                            <td class="title">Total Invoice Amount:</td>
-                            <td>{{formatMoney(invoiceSumAmount)}}</td>
-                        </tr>
-                    </tbody>
-                </table>
+          <table v-if="invoices.length > 0">
+            <tbody>
+              <tr>
+                <td class="title">Healthy Account?</td>
+                <td
+                  :class="{green: accountHelthStatus =='Yes' ,red:accountHelthStatus =='No'} "
+                >
+                  {{accountHelthStatus}}
+                </td>
+              </tr>
+              <tr>
+                <td class="title">Overdue Invoices:</td>
+                <td>{{overdueInvoiceCount}}</td>
+              </tr>
+              <tr>
+                <td class="title">Total Invoice Amount:</td>
+                <td>{{formatMoney(invoiceSumAmount)}}</td>
+              </tr>
+            </tbody>
+          </table>
 
-                <q-table title="Invoices for last 6 months:"
-                         v-if="invoices.length > 0"
-                         :rows="invoices"
-                         :columns="columns"
-                         :rows-per-page-options="[10, 15, 30, 50]"
-                         @request="onRequest">
-                    <template v-slot:top-right>
-                        <q-btn color="primary"
-                               icon-right="archive"
-                               label="Export All"
-                               no-caps
-                               @click="exportInvoices" />
-                    </template>
-                </q-table>
-            </q-page>
-        </q-page-container>
+          <q-table
+            title="Invoices for last 6 months:"
+            v-if="invoices.length > 0"
+            :rows="invoices"
+            :columns="columns"
+            :rows-per-page-options="[10, 15, 30, 50]"
+            @request="onRequest"
+          >
+            <template v-slot:top-right>
+              <q-btn
+                color="primary"
+                icon-right="archive"
+                label="Export All"
+                no-caps
+                @click="exportInvoices"
+              />
+            </template>
+          </q-table>
+        </q-page>
+      </q-page-container>
     </q-layout>
 
     <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/quasar@2.6.6/dist/quasar.umd.prod.js"></script>
     <script>
-        const app = Vue.createApp({
-            data() {
-                return {
-                    invoices: [],
-                    overdueDays: 90,
-                    healthyInvoiceSumlAmount: 100000.00,
-                    overdueInvoiceCount: 0,
-                    invoiceSumAmount: 0,
-                    todayDate: new Date().setHours(0, 0, 0, 0),
-                    columns: [
-                        { label: 'Customer Name', field: 'customerName' },
-                        { label: 'Issue Date', field: 'issueDate', format: this.formatDate },
-                        { label: 'Original Amount', field: 'originalAmount', format:this.formatMoney },
-                        { label: 'Outstanding Amount', field: 'outstandingAmount', format: this.formatMoney },
-                        { label: 'Overdue', field: 'overdue' },
-                    ],
-                }
-            },
-            computed: {
-                accountHelthStatus() {
-                    return this.overdueInvoiceCount === 0 && this.invoiceSumAmount > this.healthyInvoiceSumlAmount ? "Yes" : "No";
-                }
-            },
-            methods: {
-                /**
-                 * Generate the fake data from Xero.
-                 * Will use real data in production environment.
-                 * */
-                generateData() {
-                    this.resetAll();
-                    for (let i = 1; i < 181; i++) {
-                        const invAmount = 101 * this.getRandomArbitrary(3, 8);
-                        this.invoices.push({
-                            customerName: this.makeName(),
-                            issueDate: new Date(new Date().setDate(new Date().getDate() - i)),
-                            originalAmount: invAmount,
-                            outstandingAmount: this.generateOutstandingAmount(invAmount, i),
-                            overdue: "",
-                        });
-                    }
-
-                    this.checkInvoices();
-                },
-
-                checkInvoices() {
-                    for (const inv of this.invoices) {
-                        this.checkSingleInvoicve(inv);
-                        this.invoiceSumAmount += inv.originalAmount;
-                    }
-                },
-
-                checkSingleInvoicve(inv) {
-                    const diff = Quasar.date.getDateDiff(this.todayDate, inv.issueDate, 'days');
-                    if (diff > this.overdueDays && inv.outstandingAmount > 0) {
-                        inv.overdue = "Yes";
-                        this.overdueInvoiceCount++;
-                    }
-
-                },
-
-                resetAll() {
-                    this.invoices = [];
-                    this.invoiceSumAmount = 0;
-                    this.overdueInvoiceCount = 0;
-                },
-
-                generateOutstandingAmount(invAmount, days) {
-                    if (days < 30 && this.getRandomArbitrary(1, 7) > 3) {
-                        // There are lots of unpaid invoices in 30 days.
-                        return invAmount;
-                    } else if (days > 175 && this.getRandomArbitrary(1, 7) > 6) {
-                        // make some overdue invoices randomly
-                        return invAmount;
-                    }
-
-                    return 0;
-                },
-
-
-                /**
-                 * Export all the invoices to csv file.
-                 * Just for demo, I didn't format the data, in the production release it should be exported in excel format. 
-                 * */
-                exportInvoices() {
-                    const content = [this.columns.map(col => col.label)].concat(
-                        this.invoices.map(row => this.columns.map(col => row[col.field]).join(','))
-                    ).join('\r\n');
-                    Quasar.exportFile('invoice-export.csv', content, 'text/csv');
-                },
-
-                /**
-                * Returns a random number between min (inclusive) and max (exclusive)
-                * */
-                getRandomArbitrary(min, max) {
-                    return Math.random() * (max - min) + min;
-                },
-
-                makeName() {
-                    var firstNameLab = ["Jacob", "Michael", "Ethan", "Joshua", "Daniel", "Alexander", "Anthony", "William", "Christopher", "Matthew", "Jayden", "Andrew", "Joseph",];
-                    var lastNameLab = ["Robinson", "Walker", "Perez", "Hall", "Young", "Allen", "Sanchez", "Wright", "King", "Scott", "Green", "Baker", "Adams",];
-                    const firstName = firstNameLab[Math.floor(Math.random() * firstNameLab.length)];
-                    const lastName = lastNameLab[Math.floor(Math.random() * lastNameLab.length)];
-
-                    return `${firstName} ${lastName}`;
-                },
-
-                formatMoney(val) {
-                    return `$${val.toLocaleString("en-AU") }`;
-                },
-
-                formatDate(val) {
-                    return val.toLocaleDateString("en-AU");
-                }
-
-
+      const app = Vue.createApp({
+        data() {
+          return {
+            invoices: [],
+            overdueDays: 90,
+            healthyInvoiceSumlAmount: 100000.0,
+            overdueInvoiceCount: 0,
+            invoiceSumAmount: 0,
+            todayDate: new Date().setHours(0, 0, 0, 0),
+            columns: [
+              { label: "Customer Name", field: "customerName" },
+              {
+                label: "Issue Date",
+                field: "issueDate",
+                format: this.formatDate,
+              },
+              {
+                label: "Original Amount",
+                field: "originalAmount",
+                format: this.formatMoney,
+              },
+              {
+                label: "Outstanding Amount",
+                field: "outstandingAmount",
+                format: this.formatMoney,
+              },
+              { label: "Overdue", field: "overdue" },
+            ],
+          };
+        },
+        computed: {
+          accountHelthStatus() {
+            return this.overdueInvoiceCount === 0 &&
+              this.invoiceSumAmount > this.healthyInvoiceSumlAmount
+              ? "Yes"
+              : "No";
+          },
+        },
+        methods: {
+          /**
+           * Generate the fake data from Xero.
+           * Will use real data in production environment.
+           * */
+          generateData() {
+            this.resetAll();
+            for (let i = 1; i < 181; i++) {
+              const invAmount = 101 * this.getRandomArbitrary(3, 8);
+              this.invoices.push({
+                customerName: this.makeName(),
+                issueDate: new Date(
+                  new Date().setDate(new Date().getDate() - i)
+                ),
+                originalAmount: invAmount,
+                outstandingAmount: this.generateOutstandingAmount(invAmount, i),
+                overdue: "",
+              });
             }
-        });
-        app.use(Quasar);
-        app.mount("#q-app");
+
+            this.checkInvoices();
+          },
+
+          checkInvoices() {
+            for (const inv of this.invoices) {
+              this.checkSingleInvoicve(inv);
+              this.invoiceSumAmount += inv.originalAmount;
+            }
+          },
+
+          checkSingleInvoicve(inv) {
+            const diff = Quasar.date.getDateDiff(
+              this.todayDate,
+              inv.issueDate,
+              "days"
+            );
+            if (diff > this.overdueDays && inv.outstandingAmount > 0) {
+              inv.overdue = "Yes";
+              this.overdueInvoiceCount++;
+            }
+          },
+
+          resetAll() {
+            this.invoices = [];
+            this.invoiceSumAmount = 0;
+            this.overdueInvoiceCount = 0;
+          },
+
+          generateOutstandingAmount(invAmount, days) {
+            if (days < 30 && this.getRandomArbitrary(1, 7) > 3) {
+              // There are lots of unpaid invoices in 30 days.
+              return invAmount;
+            } else if (days > 175 && this.getRandomArbitrary(1, 7) > 6) {
+              // make some overdue invoices randomly
+              return invAmount;
+            }
+
+            return 0;
+          },
+
+          /**
+           * Export all the invoices to csv file.
+           * Just for demo, I didn't format the data, in the production release it should be exported in excel format.
+           * */
+          exportInvoices() {
+            const content = [this.columns.map((col) => col.label)]
+              .concat(
+                this.invoices.map((row) =>
+                  this.columns.map((col) => row[col.field]).join(",")
+                )
+              )
+              .join("\r\n");
+            Quasar.exportFile("invoice-export.csv", content, "text/csv");
+          },
+
+          /**
+           * Returns a random number between min (inclusive) and max (exclusive)
+           * */
+          getRandomArbitrary(min, max) {
+            return Math.random() * (max - min) + min;
+          },
+
+          makeName() {
+            var firstNameLab = [
+              "Jacob",
+              "Michael",
+              "Ethan",
+              "Joshua",
+              "Daniel",
+              "Alexander",
+              "Anthony",
+              "William",
+              "Christopher",
+              "Matthew",
+              "Jayden",
+              "Andrew",
+              "Joseph",
+            ];
+            var lastNameLab = [
+              "Robinson",
+              "Walker",
+              "Perez",
+              "Hall",
+              "Young",
+              "Allen",
+              "Sanchez",
+              "Wright",
+              "King",
+              "Scott",
+              "Green",
+              "Baker",
+              "Adams",
+            ];
+            const firstName =
+              firstNameLab[Math.floor(Math.random() * firstNameLab.length)];
+            const lastName =
+              lastNameLab[Math.floor(Math.random() * lastNameLab.length)];
+
+            return `${firstName} ${lastName}`;
+          },
+
+          formatMoney(val) {
+            return `$${val.toLocaleString("en-AU")}`;
+          },
+
+          formatDate(val) {
+            return val.toLocaleDateString("en-AU");
+          },
+        },
+      });
+      app.use(Quasar);
+      app.mount("#q-app");
     </script>
-</body>
+  </body>
 </html>
